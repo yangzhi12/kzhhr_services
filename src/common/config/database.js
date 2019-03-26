@@ -1,5 +1,5 @@
 const mysql = require('think-model-mysql');
-
+// host: 'hhr.dianjuhui.com',
 module.exports = {
   handle: mysql,
   database: 'nideshop',

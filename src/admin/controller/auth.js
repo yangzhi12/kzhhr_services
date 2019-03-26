@@ -30,9 +30,6 @@ module.exports = class extends Base {
       user_id: admin.id
     });
 
-    console.log(admin.id);
-    console.log(sessionKey);
-
     if (think.isEmpty(sessionKey)) {
       return this.fail('登录失败');
     }
