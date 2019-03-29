@@ -73,15 +73,30 @@ module.exports = class extends Base {
     const model = this.model('admin');
     // .where({ username: ['like', `%${name}%`] })
     const data = await model
+      .field([
+        'us.id',
+        'us.username',
+        'us.mobile',
+        'ro.roleno',
+        'ro.rolename',
+        'us.last_login_time'
+      ])
+      .alias('us')
+      .join({
+        table: 'admin_role',
+        join: 'left',
+        as: 'ro',
+        on: ['ro.id', 'us.admin_role_id']
+      })
       .where(
-        "(username like '%" +
+        "(us.username like '%" +
           `${name}` +
           "%')" +
-          "OR (mobile like '%" +
+          "OR (us.mobile like '%" +
           `${mobile}` +
           "%')"
       )
-      .order(['id DESC'])
+      .order(['us.id DESC'])
       .page(page, size)
       .countSelect();
 
@@ -90,8 +105,23 @@ module.exports = class extends Base {
 
   async infoAction() {
     const id = this.get('id');
-    const model = this.model('admin');
-    const data = await model.where({ id: id }).find();
+    const model = this.model('admin')
+      .field([
+        'us.id',
+        'us.username',
+        'us.mobile',
+        'ro.id as roleid',
+        'ro.roleno',
+        'ro.rolename'
+      ])
+      .alias('us')
+      .join({
+        table: 'admin_role',
+        join: 'left',
+        as: 'ro',
+        on: ['ro.id', 'us.admin_role_id']
+      });
+    const data = await model.where({ 'us.id': id }).find();
 
     return this.success(data);
   }
@@ -100,27 +130,27 @@ module.exports = class extends Base {
     if (!this.isPost) {
       return false;
     }
-
     const values = this.post();
     const id = this.post('id');
-
+    const roleid = this.post('roleid');
+    Object.assign(values, {
+      admin_role_id: roleid
+    });
     const model = this.model('admin');
-    values.is_show = values.is_show ? 1 : 0;
-    values.is_new = values.is_new ? 1 : 0;
     if (id > 0) {
-      // 如果手机号及姓名相同则存储失败，提示该用户已注册
-      const isExistsUser = model.where({ mobile: values });
-      if (isExistsUser) {
-        return this.fail(401, '该手机号已注册.');
-      } else {
-        await model.where({ id: id }).update(values);
-      }
+      await model.where({ id: id }).update(values);
     } else {
-      // 如果手机号及姓名相同则存储失败，提示该用户已注册
-      const isExistsUser = model.where({ mobile: values });
-      if (isExistsUser) {
-        return this.fail(401, '该手机号已注册.');
+      // 如果手机号相同则存储失败，提示该用户已注册
+      const user = await this.model('admin')
+        .where({ mobile: values.mobile })
+        .find();
+      if (!think.isEmpty(user)) {
+        return this.fail(401, '此手机号已经被注册，请更换手机号');
       } else {
+        Object.assign(values, {
+          password: think.md5('123456ABCDEF'),
+          password_salt: 'ABCDEF'
+        });
         delete values.id;
         await model.add(values);
       }

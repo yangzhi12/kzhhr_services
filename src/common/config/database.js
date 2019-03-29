@@ -2,10 +2,10 @@ const mysql = require('think-model-mysql');
 // host: 'hhr.dianjuhui.com',
 module.exports = {
   handle: mysql,
-  database: 'nideshop',
+  database: 'test',
   prefix: 'nideshop_',
   encoding: 'utf8mb4',
-  host: '127.0.0.1',
+  host: 'hhr.dianjuhui.com',
   port: '3390',
   user: 'root',
   password: 'kmatm123#',
