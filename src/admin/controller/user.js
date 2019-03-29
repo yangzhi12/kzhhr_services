@@ -46,23 +46,22 @@ module.exports = class extends Base {
     const id = this.post('id');
 
     const model = this.model('user');
-    values.is_show = values.is_show ? 1 : 0;
-    values.is_new = values.is_new ? 1 : 0;
     if (id > 0) {
-      // 如果手机号及姓名相同则存储失败，提示该用户已注册
-      const isExistsUser = model.where({ mobile: values });
-      if (isExistsUser) {
-        return this.fail(401, '该手机号已注册.');
-      } else {
-        await model.where({ id: id }).update(values);
-      }
+      // 暂不提供修改功能
     } else {
       // 如果手机号及姓名相同则存储失败，提示该用户已注册
-      const isExistsUser = model.where({ mobile: values });
-      if (isExistsUser) {
+      const user = await model.where({ mobile: values.mobile }).find();
+      if (!think.isEmpty(user)) {
         return this.fail(401, '该手机号已注册.');
       } else {
         delete values.id;
+        if (values.password && values.password + '') {
+        } else {
+          Object.assign(values, {
+            password: think.md5('123456ABCDEF'),
+            password_salt: 'ABCDEF'
+          });
+        }
         await model.add(values);
       }
     }
