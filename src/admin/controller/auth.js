@@ -6,12 +6,27 @@ module.exports = class extends Base {
     const password = this.post('password');
 
     const admin = await this.model('admin')
+      .field([
+        'us.id',
+        'us.username',
+        'us.mobile',
+        'us.password',
+        'us.password_salt',
+        'ro.roleno',
+        'ro.rolename'
+      ])
+      .alias('us')
+      .join({
+        table: 'admin_role',
+        join: 'left',
+        as: 'ro',
+        on: ['ro.id', 'us.admin_role_id']
+      })
       .where({ mobile: mobile })
       .find();
     if (think.isEmpty(admin)) {
       return this.fail(401, '手机号或密码不正确1');
     }
-    // console.log(think.md5(password + '' + admin.password_salt));
     if (think.md5(password + '' + admin.password_salt) !== admin.password) {
       return this.fail(400, '手机号或密码不正确2');
     }
@@ -38,10 +53,106 @@ module.exports = class extends Base {
       id: admin.id,
       username: admin.username,
       mobile: admin.mobile,
-      avatar: admin.avatar,
-      admin_role_id: admin.admin_role_id
+      roleid: admin.roleid,
+      roleno: admin.roleno,
+      rolename: admin.rolename
     };
 
     return this.success({ token: sessionKey, userInfo: userInfo });
+  }
+  /**
+   * index action
+   * @return {Promise} []
+   */
+  async indexAction() {
+    const page = this.get('page') || 1;
+    const size = this.get('size') || 10;
+    const name = this.post('name') || '';
+    const mobile = this.post('mobile') || '';
+
+    const model = this.model('admin');
+    // .where({ username: ['like', `%${name}%`] })
+    const data = await model
+      .where(
+        "(username like '%" +
+          `${name}` +
+          "%')" +
+          "OR (mobile like '%" +
+          `${mobile}` +
+          "%')"
+      )
+      .order(['id DESC'])
+      .page(page, size)
+      .countSelect();
+
+    return this.success(data);
+  }
+
+  async infoAction() {
+    const id = this.get('id');
+    const model = this.model('admin');
+    const data = await model.where({ id: id }).find();
+
+    return this.success(data);
+  }
+
+  async storeAction() {
+    if (!this.isPost) {
+      return false;
+    }
+
+    const values = this.post();
+    const id = this.post('id');
+
+    const model = this.model('admin');
+    values.is_show = values.is_show ? 1 : 0;
+    values.is_new = values.is_new ? 1 : 0;
+    if (id > 0) {
+      // 如果手机号及姓名相同则存储失败，提示该用户已注册
+      const isExistsUser = model.where({ mobile: values });
+      if (isExistsUser) {
+        return this.fail(401, '该手机号已注册.');
+      } else {
+        await model.where({ id: id }).update(values);
+      }
+    } else {
+      // 如果手机号及姓名相同则存储失败，提示该用户已注册
+      const isExistsUser = model.where({ mobile: values });
+      if (isExistsUser) {
+        return this.fail(401, '该手机号已注册.');
+      } else {
+        delete values.id;
+        await model.add(values);
+      }
+    }
+    return this.success(values);
+  }
+
+  async destoryAction() {
+    const id = this.post('id');
+    await this.model('admin')
+      .where({ id: id })
+      .limit(1)
+      .delete();
+    // TODO 删除图片
+
+    return this.success();
+  }
+
+  async modifypasswordAction() {
+    const id = this.post('id');
+    const password = this.post('password');
+    await this.model('admin')
+      .where({ id: id })
+      .update({ password: think.md5(password + 'ABCDEF') });
+    return this.success();
+  }
+
+  async resetpasswordAction() {
+    const id = this.post('id');
+    await this.model('admin')
+      .where({ id: id })
+      .update({ password: think.md5('123456ABCDEF') });
+    return this.success();
   }
 };
