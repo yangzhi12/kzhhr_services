@@ -43,4 +43,32 @@ module.exports = class extends Base {
 
     return this.success(data);
   }
+
+  async infoAction() {
+    const id = this.get('id');
+    const model = this.model('contract')
+      .field([
+        'con.id',
+        'con.contractname',
+        'con.contractno',
+        'con.contractvalue',
+        'con.contractstart',
+        'con.contractend',
+        'con.contractstate',
+        'con.userid',
+        'us.username',
+        'con.industry',
+        'con.transformer',
+        'con.voltage'
+      ])
+      .alias('con')
+      .join({
+        table: 'user',
+        join: 'left',
+        as: 'us',
+        on: ['us.id', 'con.userid']
+      });
+    const data = await model.where({ 'con.id': id }).find();
+    return this.success(data);
+  }
 };
