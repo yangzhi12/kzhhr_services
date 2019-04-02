@@ -59,7 +59,8 @@ module.exports = class extends Base {
         'us.username',
         'con.industry',
         'con.transformer',
-        'con.voltage'
+        'con.voltage',
+        'con.plan'
       ])
       .alias('con')
       .join({
