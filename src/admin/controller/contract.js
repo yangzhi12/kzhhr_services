@@ -72,4 +72,64 @@ module.exports = class extends Base {
     const data = await model.where({ 'con.id': id }).find();
     return this.success(data);
   }
+
+  /**
+   * state action
+   * @return {Promise} {}
+   */
+  async stateAction() {
+    const id = this.post('id');
+    const curuserid = this.post('userid');
+    const state = this.post('state');
+    const updateState = Object.assign(
+      {},
+      {
+        updatetime: parseInt(new Date().getTime() / 1000)
+      }
+    );
+    switch (state.substr(0, 2)) {
+      case '01': // 技术评审
+        Object.assign(updateState, {
+          technicalid: curuserid,
+          technicalstate: state,
+          contractstate: state.substr(2, 1) === '1' ? '030' : state
+        });
+        break;
+      case '03': // 合同评审
+        Object.assign(updateState, {
+          projectuserid: curuserid,
+          projectstate: state,
+          contractstate: state.substr(2, 1) === '1' ? '050' : state
+        });
+        break;
+      case '05': // 法务评审
+        Object.assign(updateState, {
+          lawuserid: curuserid,
+          lawstate: state,
+          contractstate: state.substr(2, 1) === '1' ? '080' : state
+        });
+        break;
+      case '08': // 数据接入
+        Object.assign(updateState, {
+          accessstate: state,
+          contractstate: state.substr(2, 1) === '1' ? '090' : state
+        });
+        break;
+      case '09': // 开票及打款
+        Object.assign(updateState, {
+          accountstate: state,
+          contractstate:
+            state.substr(2, 1) === '1'
+              ? '092'
+              : state.substr(2, 1) === '3'
+                ? '94'
+                : state
+        });
+        break;
+      default:
+    }
+    const model = this.model('contract');
+    const contractId = await model.where({ id: id }).update(updateState);
+    return this.success({ id: contractId });
+  }
 };
