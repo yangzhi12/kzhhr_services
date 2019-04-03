@@ -146,10 +146,17 @@ module.exports = class extends Base {
     });
     const model = this.model('contract');
     if (id > 0) {
+      console.log(values);
       await model
         .where({ id: id, updatetime: parseInt(new Date().getTime() / 1000) })
         .update(values);
     } else {
+      console.log(values);
+      Object.assign(values, {
+        contractno: 'KZZH',
+        contractstate: '010',
+        userid: this.getLoginUserId()
+      });
       delete values.id;
       await model.add(values);
     }
