@@ -155,4 +155,39 @@ module.exports = class extends Base {
     }
     return this.success(values);
   }
+
+  /**
+   * fee action 计算费用
+   * @return {Promise} {}
+   */
+  async feeAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    // 输入参数
+    const industry = this.post('industry');
+    const transformer = this.post('transformer');
+    // 返回字段
+    const fields = [
+      `round(intr.totalfee * intr.feeratio${industry}) as fee`,
+      `round(intr.totalfee * intr.feeratio${industry}/1000) * 1000 as recommendfee`
+    ];
+    const model = this.model('industry_transformer')
+      .alias('intr')
+      .join({
+        table: 'transformer',
+        join: 'left',
+        as: 'tr',
+        on: ['tr.transformerno', 'intr.transformer']
+      });
+    const data = await model
+      .field(fields)
+      .where(
+        `intr.industry='${industry}' and tr.transformername >= ${transformer}`
+      )
+      .order(['tr.transformername ASC'])
+      .limit(1)
+      .find();
+    return this.success(data);
+  }
 };
