@@ -173,10 +173,19 @@ module.exports = class extends Base {
     // 输入参数
     const industry = this.post('industry');
     const transformer = this.post('transformer');
+    const plan = this.post('plan');
+    const planno = plan.substr(0, 2); // 提取方案代号
     // 返回字段
     const fields = [
-      `round(intr.totalfee * intr.feeratio${industry}) as fee`,
-      `round(intr.totalfee * intr.feeratio${industry}/1000) * 1000 as recommendfee`
+      `industryratio`,
+      `feefactor${planno}`,
+      `ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 2 )  AS capacityratio`,
+      `ROUND(ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
+      `ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)  AS totalquantity`,
+      `intr.feeunitprice`,
+      `ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) AS totalfee`,
+      `ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
+      `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
     ];
     const model = this.model('industry_transformer')
       .alias('intr')
