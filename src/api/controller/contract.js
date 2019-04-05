@@ -205,4 +205,95 @@ module.exports = class extends Base {
       .find();
     return this.success(data);
   }
+  /**
+   * statq action 根据签单人按季度签单量
+   * @return {Promise} {}
+   */
+  async statqAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    // 输入参数
+    const userid = this.getLoginUserId(); // 签单人
+    const year = this.post('year'); // 年份（字符串）
+    // 返回字段
+    const fields = [
+      `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) as Q`,
+      `COUNT(*) as amount`,
+      `sum(case contractstate when '93' then 1 else 0 end)  as moneyisreceived`
+    ];
+    const model = this.model('contract');
+    const data = await model
+      .field(fields)
+      .where(
+        `userid=${userid} and  Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') = ${year}`
+      )
+      .group(
+        `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d'))`
+      )
+      .select();
+    const res = {
+      Q1: 0,
+      M1: 0,
+      MR1: 0,
+      Q2: 0,
+      M2: 0,
+      MR2: 0,
+      Q3: 0,
+      M3: 0,
+      MR3: 0,
+      Q4: 0,
+      M4: 0,
+      MR4: 0
+    };
+    if (data.length) {
+      for (let i = 0; i < data.length; i++) {
+        res[`Q${data[i].Q}`] = data[i].amount;
+        res[`M${data[i].Q}`] = data[i].moneyisreceived;
+        data[i].amount
+          ? (res[`MR${data[i].Q}`] =
+              (data[i].moneyisreceived * 100) / data[i].amount / 100)
+          : (res[`MR${data[i].Q}`] = '--');
+      }
+    }
+    return this.success(res);
+  }
+  /**
+   * index action
+   * @return {Promise} []
+   */
+  async indexAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    const year = this.post('year') || '';
+    const quarter = this.post('quarter') || '';
+    const userid = this.getLoginUserId();
+    const model = this.model('contract');
+    const data = await model
+      .field([
+        'con.id',
+        'con.contractno',
+        'con.contractname',
+        'con.contractvalue',
+        'con.contractstart',
+        'con.contractend',
+        'us.username',
+        'con.contractstate'
+      ])
+      .alias('con')
+      .join({
+        table: 'user',
+        join: 'left',
+        as: 'us',
+        on: ['us.id', 'con.userid']
+      })
+      .where(
+        `con.userid=${userid} and Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractstart)=13, con.contractstart/1000, con.contractstart)), '%Y') = ${year} and QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractstart)=13, con.contractstart/1000, con.contractstart)), '%Y-%m-%d')) = ${quarter}`
+      )
+      .order(['con.id DESC'])
+      .select();
+
+    return this.success(data);
+  }
 };
