@@ -276,8 +276,8 @@ module.exports = class extends Base {
         'con.contractno',
         'con.contractname',
         'con.contractvalue',
-        'con.contractstart',
-        'con.contractend',
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractstart)=13, con.contractstart/1000, con.contractstart)), '%Y-%m-%d') as contractstart`,
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractend)=13, con.contractend/1000, con.contractend)), '%Y-%m-%d') as contractend`,
         'us.username',
         'con.contractstate'
       ])
