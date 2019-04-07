@@ -17,6 +17,7 @@ module.exports = class extends Base {
         'con.contractno',
         'con.contractname',
         'con.contractvalue',
+        'con.recommendvalue',
         'con.contractstart',
         'con.contractend',
         'us.username',
@@ -52,6 +53,7 @@ module.exports = class extends Base {
         'con.contractname',
         'con.contractno',
         'con.contractvalue',
+        'con.recommendvalue',
         'con.contractstart',
         'con.contractend',
         'con.contractstate',
@@ -87,6 +89,7 @@ module.exports = class extends Base {
         updatetime: parseInt(new Date().getTime() / 1000)
       }
     );
+    const model = this.model('contract');
     switch (state.substr(0, 2)) {
       case '01': // 技术评审
         Object.assign(updateState, {
@@ -103,6 +106,13 @@ module.exports = class extends Base {
         });
         break;
       case '05': // 法务评审
+        // 合同生效后(法务评审通过)生成合同编号
+        if (state.substr(2, 1) === '1') {
+          const no = await model.getContractno();
+          Object.assign(updateState, {
+            contractno: no
+          });
+        }
         Object.assign(updateState, {
           lawuserid: curuserid,
           lawstate: state,
@@ -128,7 +138,6 @@ module.exports = class extends Base {
         break;
       default:
     }
-    const model = this.model('contract');
     const contractId = await model.where({ id: id }).update(updateState);
     return this.success({ id: contractId });
   }

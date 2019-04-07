@@ -17,6 +17,7 @@ module.exports = class extends Base {
         'con.contractno',
         'con.contractname',
         'con.contractvalue',
+        'con.recommendvalue',
         'con.contractstart',
         'con.contractend',
         'us.username',
@@ -40,7 +41,7 @@ module.exports = class extends Base {
       .order(['con.id DESC'])
       .page(page, size)
       .countSelect();
-
+    console.log(data);
     return this.success(data);
   }
 
@@ -52,6 +53,7 @@ module.exports = class extends Base {
         'con.contractname',
         'con.contractno',
         'con.contractvalue',
+        'con.recommendvalue',
         'con.contractstart',
         'con.contractend',
         'con.contractstate',
@@ -146,15 +148,13 @@ module.exports = class extends Base {
     });
     const model = this.model('contract');
     if (id > 0) {
-      console.log(values);
       await model
         .where({ id: id, updatetime: parseInt(new Date().getTime() / 1000) })
         .update(values);
     } else {
-      console.log(values);
       Object.assign(values, {
-        contractno: 'KZZH',
         contractstate: '010',
+        createtime: parseInt(new Date().getTime() / 1000),
         userid: this.getLoginUserId()
       });
       delete values.id;
@@ -220,7 +220,7 @@ module.exports = class extends Base {
     const fields = [
       `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) as Q`,
       `COUNT(*) as amount`,
-      `sum(case contractstate when '93' then 1 else 0 end)  as moneyisreceived`
+      `sum(case accountstate when '93' then 1 else 0 end)  as moneyisreceived`
     ];
     const model = this.model('contract');
     const data = await model
@@ -252,7 +252,7 @@ module.exports = class extends Base {
         res[`M${data[i].Q}`] = data[i].moneyisreceived;
         data[i].amount
           ? (res[`MR${data[i].Q}`] =
-              (data[i].moneyisreceived * 100) / data[i].amount / 100)
+              (data[i].moneyisreceived * 1.0 * 100) / data[i].amount)
           : (res[`MR${data[i].Q}`] = '--');
       }
     }
