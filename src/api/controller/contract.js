@@ -171,45 +171,77 @@ module.exports = class extends Base {
     }
     // 输入参数
     const userid = this.getLoginUserId(); // 签单人
-    const year = this.post('year'); // 年份（字符串）
+    const year = this.post('year'); // 所选年份（字符串）
+    const quarter = this.post('quarter'); // 所选季度（1, 2, 3, 4）
+    const nextquarter = {
+      '1': `${year}-04-01`,
+      '2': `${year}-07-01`,
+      '3': `${year}-10-01`,
+      '4': `${Number(year) + 1}-01-01`
+    };
+    const enddate = nextquarter[`${quarter}`];
     // 返回字段
     const fields = [
+      `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') as year`,
       `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) as Q`,
       `COUNT(*) as amount`,
-      `sum(case accountstate when '93' then 1 else 0 end)  as moneyisreceived`
+      `sum(contractvalue)  as contractvalue`,
+      `sum(recommendvalue)  as recommendvalue`
     ];
     const model = this.model('contract');
     const data = await model
       .field(fields)
       .where(
-        `userid=${userid} and  Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') = ${year}`
+        `userid=${userid} and QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) < '${enddate}' and  Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') <= ${year}`
       )
       .group(
-        `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d'))`
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y'),QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d'))`
       )
       .select();
+    // Q: 季度 Y: 年度 R: 累计
+    // T: 合同个数 M: 合同金额 N: 基准单数(金额大于3000分为两单)
     const res = {
-      Q1: 0,
-      M1: 0,
-      MR1: 0,
-      Q2: 0,
-      M2: 0,
-      MR2: 0,
-      Q3: 0,
-      M3: 0,
-      MR3: 0,
-      Q4: 0,
-      M4: 0,
-      MR4: 0
+      QT: 0,
+      QM: 0,
+      QMR: 0,
+      QN: 0,
+      YT: 0,
+      YM: 0,
+      YMR: 0,
+      YN: 0,
+      RT: 0,
+      RM: 0,
+      RMR: 0,
+      RN: 0
     };
     if (data.length) {
       for (let i = 0; i < data.length; i++) {
-        res[`Q${data[i].Q}`] = data[i].amount;
-        res[`M${data[i].Q}`] = data[i].moneyisreceived;
-        data[i].amount
-          ? (res[`MR${data[i].Q}`] =
-              (data[i].moneyisreceived * 1.0 * 100) / data[i].amount)
-          : (res[`MR${data[i].Q}`] = '--');
+        // res[`Q${data[i].Q}`] = data[i].amount;
+        // res[`M${data[i].Q}`] = data[i].moneyisreceived;
+        // data[i].amount
+        //   ? (res[`MR${data[i].Q}`] = (
+        //     (data[i].moneyisreceived * 100) /
+        //       data[i].amount
+        //   ).toFixed(2))
+        //   : (res[`MR${data[i].Q}`] = '--');
+        res['RT'] += data[i].amount;
+        res['RM'] += data[i].contractvalue;
+        res['RMR'] += data[i].recommendvalue;
+        res['RN'] += data[i].recommendvalue / 30000;
+        if (data[i].year === `${year}`) {
+          // 汇总年度
+          res['YT'] += data[i].amount;
+          res['YM'] += data[i].contractvalue;
+          res['YMR'] += data[i].recommendvalue;
+          res['YN'] += data[i].recommendvalue / 30000;
+          if (`${data[i].Q}` === `${quarter}`) {
+            // 按季度统计
+            res['QT'] += data[i].amount;
+            res['QM'] += data[i].contractvalue;
+            res['QMR'] += data[i].recommendvalue;
+            res['QN'] += data[i].recommendvalue / 30000;
+          }
+        }
       }
     }
     return this.success(res);
