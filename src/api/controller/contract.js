@@ -98,14 +98,16 @@ module.exports = class extends Base {
       return false;
     }
     const values = this.post();
-    const id = this.post('id');
     Object.assign(values, {
       createtime: parseInt(new Date().getTime() / 1000)
     });
     const model = this.model('contract');
-    if (id > 0) {
+    if (values.id && values.id > 0) {
       await model
-        .where({ id: id, updatetime: parseInt(new Date().getTime() / 1000) })
+        .where({
+          id: values.id,
+          updatetime: parseInt(new Date().getTime() / 1000)
+        })
         .update(values);
     } else {
       Object.assign(values, {
@@ -114,26 +116,20 @@ module.exports = class extends Base {
         userid: this.getLoginUserId()
       });
       delete values.id;
-      const contractid = await model.add(values);
-      if (
-        contractid &&
-        values.contractfiles &&
-        values.contractfiles.length > 0
-      ) {
+      const id = await model.add(values);
+      const contractfiles = values.contractfiles;
+      if (id && contractfiles && contractfiles.length > 0) {
         // 如果合同附件存在则插入合同附件
-        const contractfiles = values.contractfiles;
         const filemodel = this.model('contract_attachment');
         contractfiles.map(file => {
           delete file.path;
-          Object.assign(file, { contractid: contractid });
+          Object.assign(file, { contractid: id });
           return file;
         });
-        const ids = await filemodel.addMany(contractfiles);
-        // 更新合同附件字段
-        await model.where({ id: contractid }).update({ attachment: ids });
+        await filemodel.addMany(contractfiles);
       }
     }
-    return this.success({ id: contractid });
+    return this.success(values);
   }
   /**
    * fee action 计算费用
