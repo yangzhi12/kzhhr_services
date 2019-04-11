@@ -120,17 +120,20 @@ module.exports = class extends Base {
       const contractfiles = values.contractfiles;
       if (id && contractfiles && contractfiles.length > 0) {
         // 归并电气主接线图
+        var cachearray = null;
         if (values.wiringdiagrams && values.wiringdiagrams.length > 0) {
-          contractfiles.concat(values.wiringdiagrams);
+          cachearray = contractfiles.concat(values.wiringdiagrams);
+        } else {
+          cachearray = contractfiles;
         }
         // 如果合同附件存在则插入合同附件
         const filemodel = this.model('contract_attachment');
-        contractfiles.map(file => {
+        cachearray.map(file => {
           delete file.path;
           Object.assign(file, { contractid: id });
           return file;
         });
-        await filemodel.addMany(contractfiles);
+        await filemodel.addMany(cachearray);
       }
     }
     return this.success(values);
