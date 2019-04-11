@@ -13,5 +13,10 @@ module.exports = {
     appid: '', // 对应快递鸟用户后台 用户ID
     appkey: '', // 对应快递鸟用户后台 API key
     request_url: 'http://api.kdniao.cc/Ebusiness/EbusinessOrderHandle.aspx'
+  },
+  fileserver: {
+    // 文件服务器(上传、下载)
+    uploadurl: 'https://hhr.dianjuhui.com:3394/upload',
+    downloadurl: 'https://hhr.dianjuhui.com:3394/upload'
   }
 };

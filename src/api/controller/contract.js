@@ -114,7 +114,24 @@ module.exports = class extends Base {
         userid: this.getLoginUserId()
       });
       delete values.id;
-      await model.add(values);
+      const contractid = await model.add(values);
+      if (
+        contractid &&
+        values.contractfiles &&
+        values.contractfiles.length > 0
+      ) {
+        // 如果合同附件存在则插入合同附件
+        const contractfiles = values.contractfiles;
+        const filemodel = this.model('contract_attachment');
+        contractfiles.map(file => {
+          delete file.path;
+          Object.assign(file, { contractid: contractid });
+          return file;
+        });
+        const ids = await filemodel.addMany(contractfiles);
+        // 更新合同附件字段
+        await model.where({ id: contractid }).update({ attachment: ids });
+      }
     }
     return this.success(values);
   }
