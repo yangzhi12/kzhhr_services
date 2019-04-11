@@ -133,7 +133,7 @@ module.exports = class extends Base {
         await model.where({ id: contractid }).update({ attachment: ids });
       }
     }
-    return this.success(values);
+    return this.success({ id: contractid });
   }
   /**
    * fee action 计算费用
