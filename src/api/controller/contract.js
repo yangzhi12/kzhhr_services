@@ -119,6 +119,10 @@ module.exports = class extends Base {
       const id = await model.add(values);
       const contractfiles = values.contractfiles;
       if (id && contractfiles && contractfiles.length > 0) {
+        // 归并电气主接线图
+        if (values.wiringdiagrams && values.wiringdiagrams.length > 0) {
+          contractfiles.concat(values.wiringdiagrams);
+        }
         // 如果合同附件存在则插入合同附件
         const filemodel = this.model('contract_attachment');
         contractfiles.map(file => {
@@ -141,20 +145,22 @@ module.exports = class extends Base {
     }
     // 输入参数
     const industry = this.post('industry');
-    const transformer = this.post('transformer');
+    var transformer = this.post('transformer');
+    // 如果变压器总容量大于2500，则容量为9999
+    Number(transformer) > 2500 ? (transformer = '9999') : transformer;
     const plan = this.post('plan');
     const planno = plan.substr(0, 2); // 提取方案代号
     // 返回字段
     const fields = [
       `industryratio`,
       `feefactor${planno}`,
-      `ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 2 )  AS capacityratio`,
-      `ROUND(ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
+      `ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 2 )  AS capacityratio`,
+      `ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
       `ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)  AS totalquantity`,
       `intr.feeunitprice`,
       `ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) AS totalfee`,
-      `ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
-      `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / 800, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
+      `ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
+      `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
     ];
     const model = this.model('industry_transformer')
       .alias('intr')
@@ -229,14 +235,6 @@ module.exports = class extends Base {
     };
     if (data.length) {
       for (let i = 0; i < data.length; i++) {
-        // res[`Q${data[i].Q}`] = data[i].amount;
-        // res[`M${data[i].Q}`] = data[i].moneyisreceived;
-        // data[i].amount
-        //   ? (res[`MR${data[i].Q}`] = (
-        //     (data[i].moneyisreceived * 100) /
-        //       data[i].amount
-        //   ).toFixed(2))
-        //   : (res[`MR${data[i].Q}`] = '--');
         res['RT'] += data[i].amount;
         res['RM'] += data[i].contractvalue;
         res['RMR'] += data[i].recommendvalue;
