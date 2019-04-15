@@ -10,7 +10,14 @@ module.exports = class extends Base {
     if (think.isEmpty(dictname)) {
       return this.fail(401, '请指定字典名称.');
     } else {
-      const dicts = ['voltage', 'transformer', 'plantype', 'planitem', 'plan'];
+      const dicts = [
+        'voltage',
+        'transformer',
+        'plantype',
+        'planitem',
+        'plan',
+        'industry'
+      ];
       if (dicts.indexOf(dictname) !== -1) {
         const model = this.model(dictname);
         const condition = `(${dictname}no like '%${no}%') OR (${dictname}name like '%${name}%')`;
@@ -19,10 +26,10 @@ module.exports = class extends Base {
           .order(['id ASC'])
           .page(page, size)
           .countSelect();
+        return this.success(data);
       } else {
         return this.fail(401, '请检查字典名称是否有误.');
       }
     }
-    return this.success(data);
   }
 };

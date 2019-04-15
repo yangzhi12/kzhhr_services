@@ -99,14 +99,6 @@ module.exports = class extends Base {
         });
         break;
       case '03': // 合同评审
-        Object.assign(updateState, {
-          projectuserid: curuserid,
-          projectstate: state,
-          contractstate: state.substr(2, 1) === '1' ? '050' : state
-        });
-        break;
-      case '05': // 法务评审
-        // 合同生效后(法务评审通过)生成合同编号
         if (state.substr(2, 1) === '1') {
           const no = await model.getContractno();
           Object.assign(updateState, {
@@ -114,11 +106,25 @@ module.exports = class extends Base {
           });
         }
         Object.assign(updateState, {
-          lawuserid: curuserid,
-          lawstate: state,
+          projectuserid: curuserid,
+          projectstate: state,
           contractstate: state.substr(2, 1) === '1' ? '080' : state
         });
         break;
+      // case '05': // 法务评审
+      //   // 合同生效后(法务评审通过)生成合同编号
+      //   if (state.substr(2, 1) === '1') {
+      //     const no = await model.getContractno();
+      //     Object.assign(updateState, {
+      //       contractno: no
+      //     });
+      //   }
+      //   Object.assign(updateState, {
+      //     lawuserid: curuserid,
+      //     lawstate: state,
+      //     contractstate: state.substr(2, 1) === '1' ? '080' : state
+      //   });
+      //   break;
       case '08': // 数据接入
         Object.assign(updateState, {
           accessstate: state,
