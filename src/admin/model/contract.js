@@ -5,10 +5,10 @@ module.exports = class extends think.Model {
    * @returns {Promise.<*>}
    */
   async getContractno() {
-    const amount = await this.model('contract')
-      .where({ lawstate: ['=', 51] })
-      .count('contractno');
     const year = new Date().getFullYear();
+    const amount = await this.model('contract')
+      .where({ projectstate: ['=', 31], contractno: ['like', `KZZH${year}%`] })
+      .count('contractno');
     return `KZZH${year}${amount + 1}`;
   }
 };
