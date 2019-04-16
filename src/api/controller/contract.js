@@ -240,19 +240,19 @@ module.exports = class extends Base {
       for (let i = 0; i < data.length; i++) {
         res['RT'] += data[i].amount;
         res['RM'] += data[i].contractvalue;
-        res['RMR'] += data[i].recommendvalue;
+        res['RMR'] += data[i].contractvalue;
         res['RN'] += data[i].contractvalue / 30000;
         if (data[i].year === `${year}`) {
           // 汇总年度
           res['YT'] += data[i].amount;
           res['YM'] += data[i].contractvalue;
-          res['YMR'] += data[i].recommendvalue;
+          res['YMR'] += data[i].contractvalue;
           res['YN'] += data[i].contractvalue / 30000;
           if (`${data[i].Q}` === `${quarter}`) {
             // 按季度统计
             res['QT'] += data[i].amount;
             res['QM'] += data[i].contractvalue;
-            res['QMR'] += data[i].recommendvalue;
+            res['QMR'] += data[i].contractvalue;
             res['QN'] += data[i].contractvalue / 30000;
           }
         }
