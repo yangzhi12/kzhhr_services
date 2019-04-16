@@ -3,33 +3,35 @@ const Base = require('./base.js');
 module.exports = class extends Base {
   async infoAction() {
     const id = this.get('id');
-    const model = this.model('contract')
+    const model = this.model('share')
       .field([
-        'con.id',
-        'con.contractname',
-        'con.contractno',
-        'con.contractvalue',
-        'con.recommendvalue',
-        'con.contractstart',
-        'con.contractend',
-        'con.contractstate',
-        'con.userid',
-        'us.username',
-        'con.industry',
-        'con.transformer',
-        'con.voltage',
-        'con.plan'
+        'sha.id',
+        'sha.address',
+        'sha.name',
+        'sha.starttime',
+        'sha.peoples',
+        'sha.userid',
+        'sha.createtime',
+        'us.username'
       ])
-      .alias('con')
+      .alias('sha')
       .join({
         table: 'user',
         join: 'left',
         as: 'us',
-        on: ['us.id', 'con.userid']
+        on: ['us.id', 'sha.userid']
       });
-    const data = await model.where({ 'con.id': id }).find();
+    const data = await model.where({ 'sha.id': id }).find();
+    // 获取照片列表
+    const shaids = [];
+    data.map(item => {
+      shaids.push(item.id);
+    });
+    const attachments = await model.getShareAttachments(shaids);
+    Object.assign(data, { attachments: attachments });
     return this.success(data);
   }
+
   /**
    * store action 新增签单
    */
@@ -38,91 +40,27 @@ module.exports = class extends Base {
       return false;
     }
     const values = this.post();
+    console.log(values);
     Object.assign(values, {
-      createtime: parseInt(new Date().getTime() / 1000)
+      createtime: parseInt(new Date().getTime() / 1000),
+      userid: this.getLoginUserId()
     });
-    const model = this.model('contract');
-    if (values.id && values.id > 0) {
-      await model
-        .where({
-          id: values.id,
-          updatetime: parseInt(new Date().getTime() / 1000)
-        })
-        .update(values);
-    } else {
-      Object.assign(values, {
-        contractstate: '010',
-        createtime: parseInt(new Date().getTime() / 1000),
-        userid: this.getLoginUserId()
+    const model = this.model('share');
+    const id = await model.add(values);
+    const attachments = values.attachments;
+    if (attachments && attachments.length > 0) {
+      // 存储所分享的照片
+      const filemodel = this.model('share_attachment');
+      attachments.map(file => {
+        delete file.path;
+        Object.assign(file, { shareid: id });
+        return file;
       });
-      delete values.id;
-      const id = await model.add(values);
-      const contractfiles = values.contractfiles;
-      if (id && contractfiles && contractfiles.length > 0) {
-        // 归并电气主接线图
-        var cachearray = null;
-        if (values.wiringdiagrams && values.wiringdiagrams.length > 0) {
-          cachearray = contractfiles.concat(values.wiringdiagrams);
-        } else {
-          cachearray = contractfiles;
-        }
-        // 如果合同附件存在则插入合同附件
-        const filemodel = this.model('contract_attachment');
-        cachearray.map(file => {
-          delete file.path;
-          Object.assign(file, { contractid: id });
-          return file;
-        });
-        await filemodel.addMany(cachearray);
-      }
+      await filemodel.addMany(attachments);
     }
-    return this.success(values);
+    return this.success();
   }
-  /**
-   * fee action 计算费用
-   * @return {Promise} {}
-   */
-  async feeAction() {
-    if (!this.isPost) {
-      return false;
-    }
-    // 输入参数
-    const industry = this.post('industry');
-    var transformer = this.post('transformer');
-    // 如果变压器总容量大于2500，则容量为9999
-    Number(transformer) > 2500 ? (transformer = '9999') : transformer;
-    const plan = this.post('plan');
-    const planno = plan.substr(0, 2); // 提取方案代号
-    // 返回字段
-    const fields = [
-      `industryratio`,
-      `feefactor${planno}`,
-      `ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 2 )  AS capacityratio`,
-      `ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
-      `ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)  AS totalquantity`,
-      `intr.feeunitprice`,
-      `ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) AS totalfee`,
-      `ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
-      `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
-    ];
-    const model = this.model('industry_transformer')
-      .alias('intr')
-      .join({
-        table: 'transformer',
-        join: 'left',
-        as: 'tr',
-        on: ['tr.transformerno', 'intr.transformer']
-      });
-    const data = await model
-      .field(fields)
-      .where(
-        `intr.industry='${industry}' and tr.transformername >= ${transformer}`
-      )
-      .order(['tr.transformername ASC'])
-      .limit(1)
-      .find();
-    return this.success(data);
-  }
+
   /**
    * statq action 根据签单人按季度签单量
    * @return {Promise} {}
