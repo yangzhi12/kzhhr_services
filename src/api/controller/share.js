@@ -7,7 +7,7 @@ module.exports = class extends Base {
       .field([
         'sha.id',
         'sha.address',
-        'sha.name',
+        'sha.detailname',
         'sha.starttime',
         'sha.peoples',
         'sha.userid',
@@ -22,13 +22,17 @@ module.exports = class extends Base {
         on: ['us.id', 'sha.userid']
       });
     const data = await model.where({ 'sha.id': id }).find();
-    // 获取照片列表
-    const shaids = [];
-    data.map(item => {
-      shaids.push(item.id);
-    });
-    const attachments = await model.getShareAttachments(shaids);
-    Object.assign(data, { attachments: attachments });
+    if (data.length > 0) {
+      // 获取照片列表
+      const shaids = [];
+      data.map(item => {
+        shaids.push(item.id);
+      });
+      const attachments = await model.getShareAttachments(shaids);
+      data.map(item => {
+        Object.assign(item, { attachments: attachments[item.id] });
+      });
+    }
     return this.success(data);
   }
 
@@ -82,56 +86,43 @@ module.exports = class extends Base {
     const enddate = nextquarter[`${quarter}`];
     // 返回字段
     const fields = [
-      `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') as year`,
-      `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) as Q`,
+      `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(createtime)=13, createtime/1000, createtime)), '%Y') as year`,
+      `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(createtime)=13, createtime/1000, createtime)), '%Y-%m-%d')) as Q`,
       `COUNT(*) as amount`,
-      `sum(contractvalue)  as contractvalue`,
-      `sum(recommendvalue)  as recommendvalue`
+      `sum(peoples)  as peoples`
     ];
-    const model = this.model('contract');
+    const model = this.model('share');
     const data = await model
       .field(fields)
       .where(
-        `userid=${userid} and QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) < '${enddate}' and  Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') <= ${year}`
+        `userid=${userid} and QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(createtime)=13, createtime/1000, createtime)), '%Y-%m-%d')) < '${enddate}' and  Date_FORMAT(FROM_UNIXTIME(if(LENGTH(createtime)=13, createtime/1000, createtime)), '%Y') <= ${year}`
       )
       .group(
-        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y'),QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d'))`
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(createtime)=13, createtime/1000, createtime)), '%Y'),QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(createtime)=13, createtime/1000, createtime)), '%Y-%m-%d'))`
       )
       .select();
     // Q: 季度 Y: 年度 R: 累计
-    // T: 合同个数 M: 合同金额 N: 基准单数(金额大于3000分为两单)
+    // T: 分享次数 N: 参与人数
     const res = {
       QT: 0,
-      QM: 0,
-      QMR: 0,
       QN: 0,
       YT: 0,
-      YM: 0,
-      YMR: 0,
       YN: 0,
       RT: 0,
-      RM: 0,
-      RMR: 0,
       RN: 0
     };
     if (data.length) {
       for (let i = 0; i < data.length; i++) {
         res['RT'] += data[i].amount;
-        res['RM'] += data[i].contractvalue;
-        res['RMR'] += data[i].contractvalue;
-        res['RN'] += data[i].contractvalue / 30000;
+        res['RN'] += data[i].peoples;
         if (data[i].year === `${year}`) {
           // 汇总年度
           res['YT'] += data[i].amount;
-          res['YM'] += data[i].contractvalue;
-          res['YMR'] += data[i].contractvalue;
-          res['YN'] += data[i].contractvalue / 30000;
+          res['YN'] += data[i].peoples;
           if (`${data[i].Q}` === `${quarter}`) {
             // 按季度统计
             res['QT'] += data[i].amount;
-            res['QM'] += data[i].contractvalue;
-            res['QMR'] += data[i].contractvalue;
-            res['QN'] += data[i].contractvalue / 30000;
+            res['QN'] += data[i].peoples;
           }
         }
       }
@@ -149,31 +140,40 @@ module.exports = class extends Base {
     const year = this.post('year') || '';
     const quarter = this.post('quarter') || '';
     const userid = this.getLoginUserId();
-    const model = this.model('contract');
+    const model = this.model('share');
     const data = await model
       .field([
-        'con.id',
-        'con.contractno',
-        'con.contractname',
-        'con.contractvalue',
-        'con.recommendvalue',
-        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractstart)=13, con.contractstart/1000, con.contractstart)), '%Y-%m-%d') as contractstart`,
-        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractend)=13, con.contractend/1000, con.contractend)), '%Y-%m-%d') as contractend`,
-        'us.username',
-        'con.contractstate'
+        'sha.id',
+        'sha.address',
+        'sha.detailname',
+        'sha.peoples',
+        'sha.userid',
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(sha.createtime)=13, sha.createtime/1000, sha.createtime)), '%Y-%m-%d %H:%i:%s') as createtime`,
+        'us.username'
       ])
-      .alias('con')
+      .alias('sha')
       .join({
         table: 'user',
         join: 'left',
         as: 'us',
-        on: ['us.id', 'con.userid']
+        on: ['us.id', 'sha.userid']
       })
       .where(
-        `con.userid=${userid} and Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractstart)=13, con.contractstart/1000, con.contractstart)), '%Y') = ${year} and QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(con.contractstart)=13, con.contractstart/1000, con.contractstart)), '%Y-%m-%d')) = ${quarter}`
+        `sha.userid=${userid} and Date_FORMAT(FROM_UNIXTIME(if(LENGTH(sha.createtime)=13, sha.createtime/1000, sha.createtime)), '%Y') = ${year} and QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(sha.createtime)=13, sha.createtime/1000, sha.createtime)), '%Y-%m-%d')) = ${quarter}`
       )
-      .order(['con.id DESC'])
+      .order(['sha.id DESC'])
       .select();
+    if (data.length > 0) {
+      // 获取照片列表
+      const shaids = [];
+      data.map(item => {
+        shaids.push(item.id);
+      });
+      const attachments = await model.getShareAttachments(shaids);
+      data.map(item => {
+        Object.assign(item, { attachments: attachments[item.id] });
+      });
+    }
     return this.success(data);
   }
 };
