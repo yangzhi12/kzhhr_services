@@ -58,6 +58,7 @@ module.exports = class extends Base {
   async registerAction() {
     var _this = this;
     var refereeId = null;
+    var refmap = null;
     if (!_this.isPost) {
       return false;
     }
@@ -86,6 +87,9 @@ module.exports = class extends Base {
         return _this.fail(401, '此推荐人手机号码和姓名不一致，请核查');
       }
       refereeId = referee.id;
+      refmap = referee.refmap
+        ? `${referee.refmap}.${refereeId}`
+        : `${refereeId}.`;
     }
     // 保存用户信息
     values.password_salt = 'ABCDEF';
@@ -105,7 +109,10 @@ module.exports = class extends Base {
         gender: values.gender, // 性别 null：未知、MALE：男、FEMALE：女
         register_type: values.registerType, // 注册方式 REF: 别人推荐 、NO_REF: 自荐
         referee: refereeId,
-        certificate: values.certificate
+        certificate: values.certificate,
+        refmap: refmap, // 引荐关系链
+        level: 0, // 用户级别
+        state: 0 // 档案状态
       }
     );
     let userId = await _this.model('user').add(addUser);

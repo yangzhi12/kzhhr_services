@@ -238,4 +238,19 @@ module.exports = class extends Base {
       .select();
     return this.success(data);
   }
+  /**
+   * teamq action
+   * @return {Promise} []
+   */
+  async teamindexAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    const year = this.post('year') || '';
+    const quarter = this.post('quarter') || '';
+    const userid = this.getLoginUserId();
+    const model = this.model('contract');
+    const users = await model.getRefuserList(userid, year);
+    return this.success(users);
+  }
 };
