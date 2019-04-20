@@ -72,6 +72,8 @@ module.exports = class extends Base {
         on: ['us.id', 'con.userid']
       });
     const data = await model.where({ 'con.id': id }).find();
+    const attachments = await model.getAttachments(id);
+    Object.assign(data, { attachments: attachments });
     return this.success(data);
   }
 

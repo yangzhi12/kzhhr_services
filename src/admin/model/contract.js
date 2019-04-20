@@ -11,4 +11,15 @@ module.exports = class extends think.Model {
       .count('contractno');
     return `KZZH${year}${amount + 1}`;
   }
+  /**
+   * 查询合同附件(合同扫描件、电气主接线图
+   * @param contractid
+   * @returns {Promise.<*>}
+   */
+  async getAttachments(contractid) {
+    const attachment = await this.model('contract_attachment')
+      .where({ contractid: ['=', contractid] })
+      .select();
+    return attachment;
+  }
 };

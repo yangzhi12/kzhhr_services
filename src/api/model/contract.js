@@ -17,20 +17,22 @@ module.exports = class extends think.Model {
    * @param null
    * @return {Promise.<*>}
    */
+  // and Date_FORMAT(FROM_UNIXTIME(if(LENGTH(register_time)=13, register_time/1000, register_time)), '%Y') = ${year}`
   async getRefuserList(userid, year) {
     const user = await this.model('user')
       .field([
         'us.id',
         'us.username',
         'us.mobile',
+        'us.level',
         'us.referee',
         'us.refmap',
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(us.register_time)=13, us.register_time/1000, us.register_time)), '%Y') as year`,
         `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(us.register_time)=13, us.register_time/1000, us.register_time)), '%Y-%m-%d')) as q`
       ])
       .alias('us')
       .where({ id: ['=', userid] })
       .find();
-    console.log(user);
     const refusers = await this.model('user')
       .field([
         'us.id',
@@ -38,14 +40,12 @@ module.exports = class extends think.Model {
         'us.mobile',
         'us.referee',
         'us.refmap',
+        'us.level',
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(us.register_time)=13, us.register_time/1000, us.register_time)), '%Y') as year`,
         `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(us.register_time)=13, us.register_time/1000, us.register_time)), '%Y-%m-%d')) as q`
       ])
       .alias('us')
-      .where(
-        `refmap like '${
-          user.refmap
-        }%' and Date_FORMAT(FROM_UNIXTIME(if(LENGTH(register_time)=13, register_time/1000, register_time)), '%Y') = ${year}`
-      )
+      .where(`refmap like '${user.refmap}%'`)
       .select();
     return refusers;
   }
