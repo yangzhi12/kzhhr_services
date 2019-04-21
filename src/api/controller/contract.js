@@ -273,7 +273,7 @@ module.exports = class extends Base {
     const enddate = nextquarter[`${quarter}`];
     const model = this.model('contract');
     // 获取我的团队成员
-    const users = await model.getRefuserList(userid, year);
+    const users = await model.getRefuserList(userid);
     const userids = users.map(user => {
       return user.id;
     });
@@ -281,7 +281,7 @@ module.exports = class extends Base {
     const fields = [
       `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y') as year`,
       `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(contractstart)=13, contractstart/1000, contractstart)), '%Y-%m-%d')) as Q`,
-      `COUNT(*) as amount`,
+      `count(*) as amount`,
       `sum(contractvalue)  as contractvalue`
     ];
     const data = await model
@@ -328,6 +328,8 @@ module.exports = class extends Base {
         }
       }
     }
+    const userq = await model.getquser(userid, year, enddate, quarter);
+    Object.assign(res, { QP: userq.QP, YP: userq.YP, RP: userq.RP });
     return this.success(res);
   }
 };
