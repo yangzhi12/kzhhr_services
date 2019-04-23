@@ -85,10 +85,11 @@ module.exports = class extends Base {
     const id = this.post('id');
     const curuserid = this.post('userid');
     const state = this.post('state');
+    const curtime = parseInt(new Date().getTime() / 1000);
     const updateState = Object.assign(
       {},
       {
-        updatetime: parseInt(new Date().getTime() / 1000)
+        updatetime: curtime
       }
     );
     const model = this.model('contract');
@@ -110,38 +111,31 @@ module.exports = class extends Base {
         Object.assign(updateState, {
           projectuserid: curuserid,
           projectstate: state,
-          contractstate: state.substr(2, 1) === '1' ? '080' : state
+          contractstate: state.substr(2, 1) === '1' ? '050' : state
         });
         break;
-      // case '05': // 法务评审
-      //   // 合同生效后(法务评审通过)生成合同编号
-      //   if (state.substr(2, 1) === '1') {
-      //     const no = await model.getContractno();
-      //     Object.assign(updateState, {
-      //       contractno: no
-      //     });
-      //   }
-      //   Object.assign(updateState, {
-      //     lawuserid: curuserid,
-      //     lawstate: state,
-      //     contractstate: state.substr(2, 1) === '1' ? '080' : state
-      //   });
-      //   break;
-      case '08': // 数据接入
+      case '05': // 数据接入
         Object.assign(updateState, {
           accessstate: state,
-          contractstate: state.substr(2, 1) === '1' ? '090' : state
+          contractstate: state.substr(2, 1) === '1' ? '070' : state
         });
         break;
-      case '09': // 开票及打款
+      case '07': // 开票及打款
         Object.assign(updateState, {
           accountstate: state,
           contractstate:
             state.substr(2, 1) === '1'
-              ? '092'
+              ? '072'
               : state.substr(2, 1) === '3'
-                ? '94'
-                : state
+                ? '080'
+                : state,
+          paymenttime: state.substr(2, 1) === '3' ? curtime : null
+        });
+        break;
+      case '08': // 运营
+        Object.assign(updateState, {
+          accountstate: state,
+          contractstate: state
         });
         break;
       default:
