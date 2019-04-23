@@ -44,7 +44,6 @@ module.exports = class extends Base {
       return false;
     }
     const values = this.post();
-    console.log(values);
     Object.assign(values, {
       createtime: parseInt(new Date().getTime() / 1000),
       userid: this.getLoginUserId()

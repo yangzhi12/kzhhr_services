@@ -19,7 +19,7 @@ module.exports = class extends Base {
     await this.model('user')
       .where({ id: user.id })
       .update({
-        last_login_time: parseInt(Date.now() / 1000),
+        last_login_time: parseInt(Date.now().getTime() / 1000),
         last_login_ip: this.ctx.ip
       });
 
@@ -65,7 +65,7 @@ module.exports = class extends Base {
       userId = await this.model('user').add({
         username: '微信用户' + think.uuid(6),
         password: '',
-        register_time: parseInt(new Date().getTime() / 1000),
+        register_time: parseInt(new Date().getTime().getTime() / 1000),
         register_ip: clientIp,
         mobile: '',
         weixin_openid: userInfo.openId,

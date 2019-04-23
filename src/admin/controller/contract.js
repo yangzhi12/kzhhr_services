@@ -210,4 +210,36 @@ module.exports = class extends Base {
       .find();
     return this.success(data);
   }
+
+  /**
+   * levelcontract action
+   * @return {Promise} []
+   */
+  async levelcontractAction() {
+    const userid = this.post('userid');
+    const startdate = this.post('startdate');
+    const enddate = this.post('enddate');
+    const model = this.model('contract');
+    const data = await model
+      .field([
+        'con.id',
+        'con.contractno',
+        'con.contractname',
+        'con.contractvalue',
+        'con.recommendvalue',
+        'con.contractstart',
+        'con.contractend',
+        'con.contractstate'
+      ])
+      .alias('con')
+      .where(
+        `con.userid = ${userid} 
+        and con.paymenttime > ${startdate} 
+        and con.paymenttime < ${enddate}
+        and con.accountstate = 073`
+      )
+      .order(['con.id DESC'])
+      .select();
+    return this.success(data);
+  }
 };
