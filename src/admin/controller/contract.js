@@ -242,4 +242,17 @@ module.exports = class extends Base {
       .select();
     return this.success(data);
   }
+  /**
+   * teamq action
+   * @return {Promise} []
+   */
+  async teamindexAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    const userid = this.getLoginUserId();
+    const model = this.model('contract');
+    const users = await model.getRefuserList(userid);
+    return this.success(users);
+  }
 };

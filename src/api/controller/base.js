@@ -18,13 +18,12 @@ module.exports = class extends think.Controller {
       }
     }
   }
-
   /**
    * 获取时间戳
    * @returns {Number}
    */
   getTime() {
-    return parseInt(Date.now().getTime / 1000);
+    return parseInt(new Date().getTime / 1000);
   }
 
   /**

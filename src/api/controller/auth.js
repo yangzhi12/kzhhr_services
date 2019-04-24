@@ -19,7 +19,7 @@ module.exports = class extends Base {
     await this.model('user')
       .where({ id: user.id })
       .update({
-        last_login_time: parseInt(Date.now().getTime() / 1000),
+        last_login_time: parseInt(new Date().getTime()),
         last_login_ip: this.ctx.ip
       });
 

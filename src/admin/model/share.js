@@ -21,4 +21,4 @@ module.exports = class extends think.Model {
     });
     return attachments;
   }
-}
+};

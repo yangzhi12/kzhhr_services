@@ -35,7 +35,7 @@ module.exports = class extends Base {
     await this.model('admin')
       .where({ id: admin.id })
       .update({
-        last_login_time: parseInt(Date.now() / 1000),
+        last_login_time: parseInt(new Date().getTime() / 1000),
         last_login_ip: this.ctx.ip
       });
 
