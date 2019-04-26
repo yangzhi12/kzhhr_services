@@ -45,7 +45,7 @@ module.exports = class extends Base {
     }
     const values = this.post();
     Object.assign(values, {
-      createtime: parseInt(new Date().getTime() / 1000),
+      createtime: parseInt(new Date().getTime()),
       userid: this.getLoginUserId()
     });
     const model = this.model('train');

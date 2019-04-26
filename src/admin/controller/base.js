@@ -26,4 +26,16 @@ module.exports = class extends think.Controller {
   getLoginUserId() {
     return this.ctx.state.userId;
   }
+
+  /**
+   * 获取最大值
+   * @returns {*}
+   */
+  getMaxvalue(...values) {
+    console.log(values);
+    const levels = values.sort((a, b) => {
+      return a - b;
+    });
+    return levels[levels.length - 1];
+  }
 };

@@ -21,7 +21,8 @@ module.exports = class extends Base {
         'con.contractstart',
         'con.contractend',
         'us.username',
-        'con.contractstate'
+        'con.contractstate',
+        'con.paymenttime'
       ])
       .alias('con')
       .join({
@@ -85,7 +86,7 @@ module.exports = class extends Base {
     const id = this.post('id');
     const curuserid = this.post('userid');
     const state = this.post('state');
-    const curtime = parseInt(new Date().getTime() / 1000);
+    const curtime = parseInt(new Date().getTime());
     const updateState = Object.assign(
       {},
       {
@@ -250,9 +251,45 @@ module.exports = class extends Base {
     if (!this.isPost) {
       return false;
     }
-    const userid = this.getLoginUserId();
+    const userid = this.post('userid');
     const model = this.model('contract');
     const users = await model.getRefuserList(userid);
     return this.success(users);
+  }
+  /**
+   * levelcontracts action
+   * @return {Promise} []
+   */
+  async levelcontractsAction() {
+    var userids = [];
+    const model = this.model('contract');
+    const userid = this.post('userid');
+    const users = await model.getRefuserList(userid);
+    users.map(item => {
+      userids.push(item.id);
+    });
+    const startdate = this.post('startdate');
+    const enddate = this.post('enddate');
+    const data = await model
+      .field([
+        'con.id',
+        'con.contractno',
+        'con.contractname',
+        'con.contractvalue',
+        'con.recommendvalue',
+        'con.contractstart',
+        'con.contractend',
+        'con.contractstate'
+      ])
+      .alias('con')
+      .where(
+        `con.userid in (${userids})
+        and con.paymenttime > ${startdate} 
+        and con.paymenttime < ${enddate}
+        and con.accountstate = 073`
+      )
+      .order(['con.id DESC'])
+      .select();
+    return this.success(data);
   }
 };
