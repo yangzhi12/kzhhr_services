@@ -231,9 +231,16 @@ module.exports = class extends Base {
         'con.contractstart',
         'con.contractend',
         'con.contractstate',
-        'con.paymenttime'
+        'con.paymenttime',
+        'us.username'
       ])
       .alias('con')
+      .join({
+        table: 'user',
+        join: 'left',
+        as: 'us',
+        on: ['us.id', 'con.userid']
+      })
       .where(
         `con.userid = ${userid} 
         and con.paymenttime > ${startdate} 
@@ -283,9 +290,16 @@ module.exports = class extends Base {
         'con.contractend',
         'con.contractstate',
         'con.paymenttime',
-        'con.userid'
+        'con.userid',
+        'us.username'
       ])
       .alias('con')
+      .join({
+        table: 'user',
+        join: 'left',
+        as: 'us',
+        on: ['us.id', 'con.userid']
+      })
       .where(
         `con.userid in (${userids})
         and con.paymenttime > ${startdate} 
