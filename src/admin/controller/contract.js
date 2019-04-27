@@ -230,7 +230,8 @@ module.exports = class extends Base {
         'con.recommendvalue',
         'con.contractstart',
         'con.contractend',
-        'con.contractstate'
+        'con.contractstate',
+        'con.paymenttime'
       ])
       .alias('con')
       .where(
@@ -256,6 +257,7 @@ module.exports = class extends Base {
     const users = await model.getRefuserList(userid);
     return this.success(users);
   }
+
   /**
    * levelcontracts action
    * @return {Promise} []
@@ -279,7 +281,9 @@ module.exports = class extends Base {
         'con.recommendvalue',
         'con.contractstart',
         'con.contractend',
-        'con.contractstate'
+        'con.contractstate',
+        'con.paymenttime',
+        'con.userid'
       ])
       .alias('con')
       .where(
@@ -291,5 +295,14 @@ module.exports = class extends Base {
       .order(['con.id DESC'])
       .select();
     return this.success(data);
+  }
+  /**
+   * allmember action
+   * @return {Promise} []
+   */
+  async allmemberAction() {
+    if (!this.isPost) return false;
+    const members = await this.model('contract').getRefAllUserList();
+    return this.success(members);
   }
 };

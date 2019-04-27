@@ -8,7 +8,7 @@ module.exports = class extends think.Model {
     const year = new Date().getFullYear();
     const amount = await this.model('contract')
       .where({ projectstate: ['=', 31], contractno: ['like', `KZZH${year}%`] })
-      .count('contractno');
+      .count();
     return `KZZH${year}${amount + 1}`;
   }
   /**
@@ -70,6 +70,36 @@ module.exports = class extends think.Model {
         on: ['us.level', 'le.no']
       })
       .where(`refmap like '${user.refmap}%'`)
+      .select();
+    return refusers;
+  }
+  /**
+   * 昆自合伙人
+   * @param null
+   * @return {Promise.<*>}
+   */
+  // and Date_FORMAT(FROM_UNIXTIME(if(LENGTH(register_time)=13, register_time/1000, register_time)), '%Y') = ${year}`
+  async getRefAllUserList() {
+    const refusers = await this.model('user')
+      .field([
+        'us.id',
+        'us.username',
+        'us.username as name',
+        'us.mobile',
+        'us.referee',
+        'us.refmap',
+        'us.level',
+        'le.name as levelname',
+        `Date_FORMAT(FROM_UNIXTIME(if(LENGTH(us.register_time)=13, us.register_time/1000, us.register_time)), '%Y') as year`,
+        `QUARTER(Date_FORMAT(FROM_UNIXTIME(if(LENGTH(us.register_time)=13, us.register_time/1000, us.register_time)), '%Y-%m-%d')) as q`
+      ])
+      .alias('us')
+      .join({
+        table: 'level',
+        join: 'left',
+        as: 'le',
+        on: ['us.level', 'le.no']
+      })
       .select();
     return refusers;
   }
