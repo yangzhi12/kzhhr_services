@@ -1,16 +1,14 @@
 const Base = require('./base.js');
 
 module.exports = class extends Base {
-  /**
-   * qlevel action
-   * @return {Promise} []
-   */
-  async qlevelAction() {
-    const page = this.post('page') || 1;
-    const size = this.post('size') || 10;
-    const mobile = this.post('mobile') || '';
-    const username = this.post('username') || '';
+  async getsubecordsAction() {
+    if (!this.isPost) {
+      return this.fail('钻级评定失败.');
+    }
+    const userid = this.post('userid');
+    const refuserids = this.post('refuserids');
     const year = this.post('year'); // 所选年份（字符串）
+    const quarter = this.post('quarter');
     const qstartdate = {
       '1': `${year}-01-01`,
       '2': `${year}-04-01`,
@@ -23,14 +21,22 @@ module.exports = class extends Base {
       '3': `${year}-10-01`,
       '4': `${Number(year) + 1}-01-01`
     };
-    // const model = this.model('report');
-    // // 生成报表初始化数据
-    // const ireport = await model.initReport(
-    //   mobile,
-    //   username,
-    //   qstartdate,
-    //   qenddate
-    // );
-    return this.success();
+    console.log('dsa');
+    if (refuserids && refuserids.length > 0) {
+      const model = this.model('report');
+      const data = await model
+        .where(
+          `userid in (${refuserids})
+          and createtime > ${qstartdate[quarter]} 
+          and createtime < ${qenddate[quarter]}`
+        )
+        .count();
+      if (data !== refuserids.length) {
+        return this.fail('请先确定下级成员钻级.');
+      }
+    } else {
+      console.log(userid);
+      return this.success(userid);
+    }
   }
 };
