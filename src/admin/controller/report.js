@@ -23,27 +23,14 @@ module.exports = class extends Base {
       '3': `${year}-10-01`,
       '4': `${Number(year) + 1}-01-01`
     };
-    const model = this.model('report');
-    // 生成报表初始化数据
-    const ireport = await model.initReport(
-      mobile,
-      username,
-      qstartdate,
-      qenddate
-    );
-    const data = await model
-      .field(['id', 'username', 'mobile'])
-      .where(
-        "(mobile like '%" +
-          `${mobile}` +
-          "%')" +
-          "OR (username like '%" +
-          `${username}` +
-          "%')"
-      )
-      .order(['id DESC'])
-      .page(page, size)
-      .countSelect();
-    return this.success(data);
+    // const model = this.model('report');
+    // // 生成报表初始化数据
+    // const ireport = await model.initReport(
+    //   mobile,
+    //   username,
+    //   qstartdate,
+    //   qenddate
+    // );
+    return this.success();
   }
 };

@@ -7,15 +7,20 @@ module.exports = class extends Base {
    */
   async levelreviewAction() {
     if (!this.isPost) return false;
+    let result = null;
     const information = this.post('information') || 3;
     const orders = this.post('orders');
-    // const expands = this.post('expands');
+    const expands = this.post('expands');
     const teamorders = this.post('teamorders');
     const trains = this.post('trains');
     const shares = this.post('shares');
     // const lostorders = this.post('lostorders');
     // 评级
-    const where = `information <= ${information} and orders <= ${orders} and teamorders <= ${teamorders} and trains <= ${trains} and shares <= ${shares}`;
+    const where = `
+      information <= ${information} 
+      and orders <= ${orders}
+      and trains <= ${trains} 
+      and shares <= ${shares}`;
     const model = this.model('level');
     let data = await model
       .where(where)
@@ -27,7 +32,10 @@ module.exports = class extends Base {
         .order('id')
         .limit(1)
         .select();
+      result = data[0];
+    } else {
+      result = this.reviewTeamOrdersOrExpands(data, teamorders, expands);
     }
-    return this.success(data[0]);
+    return this.success(result);
   }
 };
