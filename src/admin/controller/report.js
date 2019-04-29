@@ -164,8 +164,8 @@ module.exports = class extends Base {
     }
     const year = this.post('year');
     const quarter = this.post('quarter');
-    const mobile = this.post('mobile');
-    const username = this.post('username');
+    const mobile = this.post('mobile') || '';
+    const username = this.post('username') || '';
     const page = this.post('page') || 1;
     const size = this.post('size') || 10;
     const qstartdate = {
