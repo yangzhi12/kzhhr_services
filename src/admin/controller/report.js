@@ -154,4 +154,93 @@ module.exports = class extends Base {
     const data = await model.thenAdd(insertsql, wheresql);
     this.success(data);
   }
+  /**
+   * index action
+   * @return {Promise}
+   */
+  async indexAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    const year = this.post('year');
+    const quarter = this.post('quarter');
+    const mobile = this.post('mobile');
+    const username = this.post('username');
+    const page = this.post('page') || 1;
+    const size = this.post('size') || 10;
+    const qstartdate = {
+      '1': `${year}-01-01`,
+      '2': `${year}-04-01`,
+      '3': `${year}-07-01`,
+      '4': `${year}-10-01`
+    };
+    const qenddate = {
+      '1': `${year}-04-01`,
+      '2': `${year}-07-01`,
+      '3': `${year}-10-01`,
+      '4': `${Number(year) + 1}-01-01`
+    };
+    const startdate = new Date(qstartdate[quarter]).getTime();
+    const enddate = new Date(qenddate[quarter]).getTime();
+    const model = this.model('report');
+    const data = await model
+      .field(
+        `rep.id,
+        rep.userid,
+        us.username,
+        us.mobile,
+        rep.level as levelno,
+        rep.orders,
+        rep.orderprice,
+        (IFNULL(rep.dirorders, 0) * 400) as dirordersvalue, 
+        (IFNULL(rep.indirorders, 0) * 200) as indirordersvalue,
+        IFNULL(rep.originmount, 0) as originmount,
+        IFNULL(rep.offsetmount, 0) as offsetmount,
+        IFNULL(rep.lostmount, 0) as lostmount,
+        IFNULL(rep.ismarketman, 0) as ismarketman,
+        IFNULL(rep.issaleman, 0) as issaleman,
+        IFNULL(rep.lastyearvalue, 0) as lastyearvalue`
+      )
+      .alias('rep')
+      .join({
+        table: 'user',
+        join: 'left',
+        as: 'us',
+        on: ['rep.userid', 'us.id']
+      })
+      .where(
+        "(us.mobile like '%" +
+          `${mobile}` +
+          "%'" +
+          " or us.username like '%" +
+          `${username}` +
+          "%')" +
+          ' and (rep.createtime >=' +
+          `${startdate} and ` +
+          'rep.createtime <' +
+          `${enddate})`
+      )
+      .order(['rep.id ASC'])
+      .page(page, size)
+      .countSelect();
+    if (data.data.length > 0) {
+      data.data.map(item => {
+        // 此处可加入流失率的计算
+        // 收益金额 = (自签站点数 * 单价 + 额外奖励(直接下一级 + 直接下二级) + 老客户结算值 * 0.9) [专职业务员 + 15000][公司营销人员 * 0.8]
+        // 收益金额根据客户流失率计算相应的结算值（客户流失率大于20%，结算值扣减10%， 流失率大于50%，公司取消资格。存量客户交由上一级代理，所获结算值继续分享50%，代理分享50%）
+        let incomevalue = Math.round(item.orders) * item.orderprice;
+        const prize = item.dirordersvalue + item.indirordersvalue;
+        if (item.ismarketman) {
+          incomevalue = Numeric(incomevalue * 0.8, 2);
+        }
+        return Object.assign(item, {
+          orders: Math.round(item.orders),
+          incomevalue: incomevalue,
+          lostratio: 0,
+          prize: prize
+        });
+      });
+    }
+    this.success(data);
+  }
 };
