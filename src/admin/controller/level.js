@@ -32,7 +32,7 @@ module.exports = class extends Base {
         .order('id')
         .limit(1)
         .select();
-      result = data[0];
+      result = Object.assign(data[0], { ex: 0, tm: teamorders });
     } else {
       result = this.reviewTeamOrdersOrExpands(data, teamorders, expands);
     }
