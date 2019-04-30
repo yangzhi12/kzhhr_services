@@ -20,7 +20,7 @@ module.exports = class extends think.Controller {
   }
   /**
    * 获取时间戳
-   * @returns {Number}
+   * @return {Number}
    */
   getTime() {
     return parseInt(new Date().getTime / 1000);
@@ -28,9 +28,41 @@ module.exports = class extends think.Controller {
 
   /**
    * 获取当前登录用户的id
-   * @returns {*}
+   * @return {*}
    */
   getLoginUserId() {
     return this.ctx.state.userId;
+  }
+
+  /**
+   * 获取钻级名称
+   * @return {*}
+   */
+  getLevelName(levelno) {
+    const level = {
+      '00': '业务员',
+      '11': '一钻A',
+      '12': '一钻B',
+      '13': '一钻C',
+      '14': '一钻D',
+      '21': '二钻A',
+      '22': '二钻B',
+      '23': '二钻C',
+      '24': '二钻D',
+      '31': '三钻A',
+      '32': '三钻B',
+      '33': '三钻C',
+      '34': '三钻D',
+      '41': '四钻A',
+      '42': '四钻B',
+      '43': '四钻C',
+      '44': '四钻D',
+      '51': '五钻A',
+      '52': '五钻B',
+      '53': '五钻C',
+      '54': '五钻D',
+      '55': '五钻E'
+    };
+    return level[levelno] || '业务员';
   }
 };
