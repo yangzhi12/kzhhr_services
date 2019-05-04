@@ -10,11 +10,19 @@ module.exports = class extends Base {
       return false;
     }
     const model = this.model('notify');
-    const data = await model
+    // 获取最近10条通知记录
+    const notify = await model
+      .where({ type: ['=', 'notify'] })
       .order(['id DESC'])
       .limit(10)
       .select();
-    this.success(data);
+    // 获取最近10条公告记录
+    const notice = await model
+      .where({ type: ['=', 'notice'] })
+      .order(['id DESC'])
+      .limit(10)
+      .select();
+    this.success(notify.concat(notice));
   }
   /**
    * store action
