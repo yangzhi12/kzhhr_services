@@ -137,6 +137,33 @@ module.exports = class extends Base {
     }
     return _this.success({ token: sessionKey, userInfo: newUserInfo });
   }
-
   // 根据用户ID查询用户信息
+  async modifypwdAction() {
+    if (!this.isPost) {
+      return false;
+    }
+    const password_salt = 'ABCDEF';
+    const values = this.post();
+    const model = this.model('user');
+    const oldpwd = await model
+      .field(['password'])
+      .where({ id: ['=', values.id] })
+      .find();
+    if (oldpwd) {
+      const upwd = think.md5(values.oldpassword + password_salt);
+      if (upwd !== oldpwd.password) {
+        return this.fail('原密码输入错误，请重新输入!');
+      } else {
+        const npwd = think.md5(values.newpassword + password_salt);
+        const udata = await model
+          .where({ id: values.id })
+          .update({ password: npwd });
+        if (udata) {
+          return this.success(udata);
+        }
+      }
+    } else {
+      return this.fail('该用户不存在!');
+    }
+  }
 };
