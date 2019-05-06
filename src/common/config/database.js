@@ -1,8 +1,8 @@
 const mysql = require('think-model-mysql');
 module.exports = {
   handle: mysql,
-  database: 'test',
-  prefix: 'nideshop_',
+  database: 'kzhhr',
+  prefix: 'kzhhr_',
   encoding: 'utf8mb4',
   host: 'localhost',
   port: '3306',

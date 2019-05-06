@@ -16,11 +16,11 @@ module.exports = class extends Base {
     const data = await model
       .where(
         "(rolename like '%" +
-          `${rolename}` +
-          "%')" +
-          "OR (roleno like '%" +
-          `${roleno}` +
-          "%')"
+        `${rolename}` +
+        "%')" +
+        "OR (roleno like '%" +
+        `${roleno}` +
+        "%')"
       )
       .order(['id DESC'])
       .page(page, size)
@@ -57,7 +57,7 @@ module.exports = class extends Base {
       }
     } else {
       // 如果分组编号相同则存储失败，提示该分组已存在
-      const isExistsRole = model.where({ roleno: roleno });
+      const isExistsRole = model.where({ roleno: values.roleno });
       if (isExistsRole) {
         return this.fail(401, '该分组已存在.');
       } else {
