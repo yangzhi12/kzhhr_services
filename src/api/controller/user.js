@@ -4,11 +4,6 @@ const _ = require('lodash');
 
 module.exports = class extends Base {
   async infoAction() {
-    // const userInfo = await this.model('user')
-    //   .where({ id: this.getLoginUserId() })
-    //   .find()
-    // delete userInfo.password
-    // return this.json(userInfo)
     const userInfo = await this.model('user')
       .field([
         'us.id',
@@ -21,7 +16,13 @@ module.exports = class extends Base {
         'us.state',
         'us.register_type',
         're.username as refereename',
-        're.mobile as refereemobile'
+        're.mobile as refereemobile',
+        'us.email',
+        'us.bankno',
+        'us.bankaddress',
+        'us.contractfiles',
+        'us.wiringdiagrams',
+        'us.address'
       ])
       .alias('us')
       .join({
@@ -32,8 +33,70 @@ module.exports = class extends Base {
       })
       .where({ 'us.id': this.getLoginUserId() })
       .find();
+
+    // const userfam = await model('user_family')
+    //   .where({'userfam.id': this.getLoginUserId() })
+    //   .select();
+    // let userInfo = Object.assign(
+    //   userInfoadd,userfam
+    // )
+    // console.log(userInfo)
+
     return this.json(userInfo);
   }
+
+  async famAction(){
+    let _this = this
+    const famInfo = await _this.model('user_family')
+      .where({userid:_this.getLoginUserId()})
+      .select()
+
+    // console.log(famInfo)
+
+    return this.json(famInfo);
+  }
+
+  async updatefamlilyAction() {
+    if (!this.isPost){
+      return false;
+    }
+    let values = this.post()
+    const famupdate = this.model('user_family').where({id:values.id}).update({
+      name:values.name,
+      appellation:values.appel,
+      address:values.address,
+      mobile:values.mobile
+    })
+
+    console.log(famupdate)
+
+    return this.success({famupdate:famupdate})
+  }
+
+  async deletefamlilyAction() {
+     if (!this.isPost){
+      return false;
+    }
+    let values = this.post()
+    await this.model('user_family').where({id:values.id}).delete();
+
+    return this.success('删除成功')
+  }
+
+  //获取用户id
+  // async idAction(){
+  //   let _this = this
+  //   if (!_this.isPost){
+  //     return false;
+  //   }
+  //   const values = _this.post()
+
+  //   console.log(values.id)
+
+  //   const idupdate = _this.model('user_id').where().update({id01:values.id})
+
+  //   return _this.success()
+  // }
 
   /**
    * 保存用户头像
@@ -165,5 +228,81 @@ module.exports = class extends Base {
     } else {
       return this.fail('该用户不存在!');
     }
+  }
+
+  //保存家庭成员
+  async addfamlilyAction(){
+    var _this = this;
+    if (!_this.isPost) {
+      return false;
+    }
+
+    const values = _this.post();
+    const addFamlilyNum = Object.assign(
+      {},
+      {
+        userid: this.getLoginUserId(),
+        name:values.name,
+        appellation:values.appellation,
+        mobile:values.mobile,
+        address:values.address,
+      }
+    )
+
+   let familyid = await _this.model('user_family').add(addFamlilyNum);
+
+   return _this.success({familyid: familyid});
+
+  }
+
+  //完善个人信息
+  async completefamlilyAction(){
+    var _this = this;
+
+    if(!_this.isPost){
+      return false;
+    }
+
+    const values = _this.post();
+
+    let model = _this.model('user');
+
+    let comnumfam = await model.where({id:this.getLoginUserId()}).update({
+      // username:values.username,
+      // gender:values.gender,
+      // mobile:values.mobile,
+      // weixinno:values.weixinno,
+      // level: values.level,
+      // state: values.state,
+      email:values.email,
+      bankno:values.bankno,
+      bankaddress:values.bankaddress,
+      address:values.address,
+      wiringdiagrams: values.wiringdiagrams,
+      contractfiles: values.contractfiles
+    });
+
+    // let famupdate = await model('user_family').where(id:).update({
+
+    // })
+    //个人简历信息
+    //const id = await model.add(values);
+    // const wiringdiagrams = values.wiringdiagrams;
+    // if (wiringdiagrams && wiringdiagrams.length > 0) {
+    //   // 存储所分享的照片
+    //   const filemodel = _this.model('user_resume_attachment');
+    //   await filemodel.addMany(wiringdiagrams);
+    // }
+
+    //个人征信证明
+    // const contractfiles = values.contractfiles;
+    // if (contractfiles && contractfiles.length > 0) {
+    //   // 存储所分享的照片
+    //   const filemodelredict = _this.model('user_resume_attachment');
+    //   await filemodelredict.addMany(contractfiles);
+    // }
+
+    return _this.success({comnumfam:comnumfam})
+
   }
 };
