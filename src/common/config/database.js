@@ -1,7 +1,7 @@
 const mysql = require('think-model-mysql');
 module.exports = {
   handle: mysql,
-  database: 'kmatm',
+  database: 'kzhhr',
   prefix: 'kzhhr_',
   encoding: 'utf8mb4',
   host: 'localhost',

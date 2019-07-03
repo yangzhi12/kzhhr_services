@@ -91,43 +91,24 @@ module.exports = class extends Base {
     var transformer = this.post('transformer');
     const plan = this.post('plan');
     const planno = plan.substr(0, 2); // 提取方案代号
-    // const fields = [
-    //   `industryratio`,
-    //   `feefactor${planno}`,
-    //   `ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 2 )  AS capacityratio`,
-    //   `ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
-    //   `ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)  AS totalquantity`,
-    //   `intr.feeunitprice`,
-    //   `ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) AS totalfee`,
-    //   `ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
-    //   `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(intr.totalpower * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
-    // ];
     const fields = [
-      `industryratio`,
+      `intr.industryratio`,
       `feefactor${planno}`,
-      `ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 2 )  AS capacityratio`,
-      `ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
+      `ROUND( 1 / POWER( ${Number(transformer)} / intr.capacityconstant, intr.factor ), 2 )  AS capacityratio`,
+      `ROUND(ROUND( 1 / POWER( ${Number(transformer)} / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)  AS feeratio`,
       `ROUND(${Number(transformer)} * intr.totalusehoursyear * intr.powerratio)  AS totalquantity`,
       `intr.feeunitprice`,
       `ROUND(intr.feeunitprice * ROUND(${Number(transformer)} * intr.totalusehoursyear * intr.powerratio)) AS totalfee`,
-      `ROUND(ROUND(intr.feeunitprice * ROUND(${Number(transformer)} * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
-      `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(${Number(transformer)} * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( intr.totalpower / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
+      `ROUND(ROUND(intr.feeunitprice * ROUND(${Number(transformer)} * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( ${Number(transformer)} / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) AS fee`,
+      `FLOOR(ROUND(ROUND(intr.feeunitprice * ROUND(${Number(transformer)} * intr.totalusehoursyear * intr.powerratio)) * ROUND(ROUND( 1 / POWER( ${Number(transformer)} / intr.capacityconstant, intr.factor ), 4 ) * intr.industryratio * intr.feefactor${planno}, 4)) / 1000)*1000 as recommendfee`
     ];
-    const model = this.model('industry_transformer')
+    const model = this.model('industry')
       .alias('intr')
-      .join({
-        table: 'transformer',
-        join: 'left',
-        as: 'tr',
-        on: ['tr.transformerno', 'intr.transformer']
-      });
     const data = await model
       .field(fields)
       .where(
-        `intr.industry='${industry}' and tr.mincapacity < ${transformer} and tr.maxcapacity >= ${transformer}`
+        `intr.industryno='${industry}'`
       )
-      // .order(['tr.transformername ASC'])
-      // .limit(1)
       .find();
     return this.success(data);
   }
