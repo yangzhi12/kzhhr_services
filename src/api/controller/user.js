@@ -4,7 +4,10 @@ const _ = require('lodash');
 
 module.exports = class extends Base {
   async infoAction() {
-    const userInfo = await this.model('user')
+    const uid = this.getLoginUserId();
+    const model = this.model('user');
+    // 获取个人基本信息
+    let userInfo = await model
       .field([
         'us.id',
         'us.username',
@@ -20,8 +23,6 @@ module.exports = class extends Base {
         'us.email',
         'us.bankno',
         'us.bankaddress',
-        'us.contractfiles',
-        'us.wiringdiagrams',
         'us.address'
       ])
       .alias('us')
@@ -31,17 +32,13 @@ module.exports = class extends Base {
         as: 're',
         on: ['us.referee', 're.id']
       })
-      .where({ 'us.id': this.getLoginUserId() })
+      .where({ 'us.id':  uid})
       .find();
-
-    // const userfam = await model('user_family')
-    //   .where({'userfam.id': this.getLoginUserId() })
-    //   .select();
-    // let userInfo = Object.assign(
-    //   userInfoadd,userfam
-    // )
-    // console.log(userInfo)
-
+    // 获取附件列表，如个人征信图片及个人简历  
+    const attachmentlist = await model.getUserAttachments(uid);
+    // 获取家庭成员关系
+    const familylist = await model.getUserFamilies(uid)
+    Object.assign(userInfo, {attachmentlist: attachmentlist, familylist: familylist});
     return this.json(userInfo);
   }
 
@@ -50,9 +47,6 @@ module.exports = class extends Base {
     const famInfo = await _this.model('user_family')
       .where({userid:_this.getLoginUserId()})
       .select()
-
-    // console.log(famInfo)
-
     return this.json(famInfo);
   }
 
@@ -266,42 +260,20 @@ module.exports = class extends Base {
     const values = _this.post();
 
     let model = _this.model('user');
-
-    let comnumfam = await model.where({id:this.getLoginUserId()}).update({
-      // username:values.username,
-      // gender:values.gender,
-      // mobile:values.mobile,
-      // weixinno:values.weixinno,
-      // level: values.level,
-      // state: values.state,
+    const userid = this.getLoginUserId();
+    let comnumfam = await model.where({id: userid}).update({
       email:values.email,
       bankno:values.bankno,
       bankaddress:values.bankaddress,
-      address:values.address,
-      wiringdiagrams: values.wiringdiagrams,
-      contractfiles: values.contractfiles
+      address:values.address
     });
-
-    // let famupdate = await model('user_family').where(id:).update({
-
-    // })
-    //个人简历信息
-    //const id = await model.add(values);
-    // const wiringdiagrams = values.wiringdiagrams;
-    // if (wiringdiagrams && wiringdiagrams.length > 0) {
-    //   // 存储所分享的照片
-    //   const filemodel = _this.model('user_resume_attachment');
-    //   await filemodel.addMany(wiringdiagrams);
-    // }
-
-    //个人征信证明
-    // const contractfiles = values.contractfiles;
-    // if (contractfiles && contractfiles.length > 0) {
-    //   // 存储所分享的照片
-    //   const filemodelredict = _this.model('user_resume_attachment');
-    //   await filemodelredict.addMany(contractfiles);
-    // }
-
+    // 存储个人简历及个人征信证明
+    if (values.level > 10) {
+      await model.saveAttachment(values.resume_attachmentlist, 'resume', userid)
+    }
+    if (values.level > 40) {
+      await model.saveAttachment(values.credit_attachmentlist, 'credit', userid)
+    }
     return _this.success({comnumfam:comnumfam})
 
   }
