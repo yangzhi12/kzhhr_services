@@ -32,8 +32,12 @@ module.exports = class extends Base {
   async infoAction() {
     const id = this.get('id');
     const model = this.model('user');
-    const data = await model.where({ id: id }).find();
-
+    let data = await model.where({ id: id }).find();
+    // 获取家庭成员信息
+    const userAttachmentList = await model.getUserAttachments(id)
+    const familyList = await model.getUserFamily(id)
+    Object.assign(data, {userAttachmentList: userAttachmentList, familyList: familyList});
+    // 获取个人简历及征信证明
     return this.success(data);
   }
 

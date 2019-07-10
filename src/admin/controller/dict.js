@@ -12,7 +12,6 @@ module.exports = class extends Base {
     } else {
       const dicts = [
         'voltage',
-        'transformer',
         'plantype',
         'planitem',
         'plan',
